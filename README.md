@@ -1,195 +1,116 @@
 # Rimlock
 
-A Chromium extension (Chrome, Edge, Brave, Opera) that puts a PIN screen in front of your
-browser. On every browser start, every tab is replaced by a lock screen until the correct
-PIN is entered. Nothing loads and nothing is browsable. Your windows are hidden rather than
-closed, so the session comes back exactly as you left it — same tabs, same history, same
-scroll position.
+**A PIN screen in front of your browser.** When the browser starts, Rimlock locks it. Enter
+your PIN and your session comes back exactly as you left it — same tabs, same pinned tabs,
+same history, nothing reloaded that wasn't already loaded.
 
-## Installing it
+For the moment when someone else picks up your laptop and your browser is still signed in to
+everything.
 
-1. Open `chrome://extensions` (or `edge://extensions`).
-2. Turn on **Developer mode** (top right).
-3. Click **Load unpacked** and pick this folder.
-4. A setup tab opens. Choose a 6–12 digit PIN and **save the recovery code it shows you.**
+> Manifest V3 · Chrome, Edge, Brave, Opera · no network requests, no analytics, no remote code
+
+<!-- SCREENSHOTS — add two PNGs to docs/, then delete this comment block so they render.
+     You need both for the Chrome Web Store submission anyway (1280x800 or 640x400).
+       docs/lock-screen.png   the lock screen, full screen
+       docs/settings.png      the settings page
+
+![The lock screen](docs/lock-screen.png)
+-->
+
+---
+
+## What it does
+
+- **Locks on startup**, every time, with no gap to slip through.
+- **Locks on demand** — toolbar button or `Ctrl+Shift+L` — and optionally after idle.
+- **Never loses your session.** Windows are hidden, not closed, so nothing is rebuilt and
+  nothing is lost. Tabs your browser left unloaded stay unloaded.
+- **Never stores your PIN.** Only a salted PBKDF2-SHA256 digest, kept locally. Wrong guesses
+  trigger an escalating delay that survives a restart.
+- **Gives you a recovery code**, shown once at setup, for when you forget the PIN.
+
+## Install
+
+Not on the Chrome Web Store yet. To run it from source:
+
+1. Open `chrome://extensions` (or `brave://extensions`, `edge://extensions`).
+2. Turn on **Developer mode**.
+3. **Load unpacked** → pick this folder.
+4. A setup tab opens. Choose a 6–12 digit PIN and **save the recovery code**.
 5. In Settings, act on the **"Incognito is not covered"** card if it appears.
 
-That is the whole install. The first real test: close the browser completely, reopen it.
-You should land on the lock screen.
-
-## Using it
+Then close the browser completely and reopen it. You should land on the lock screen.
 
 | Action | How |
 | --- | --- |
-| Lock right now | Toolbar icon → **Lock now**, or `Ctrl+Shift+L` |
-| Change PIN / settings | Toolbar icon → **Settings** |
-| Forgot the PIN | On the lock screen: **Forgot your PIN?** → recovery code |
+| Lock now | Toolbar icon → **Lock now**, or `Ctrl+Shift+L` |
+| Settings / change PIN | Toolbar icon → **Settings** |
+| Forgot your PIN | Lock screen → **Forgot your PIN?** → recovery code |
 
-Settings let you toggle lock-on-startup, turn on lock-after-idle (with a minute count), change
-the PIN, regenerate the recovery code, or remove protection entirely.
+## What this is not
 
-## How the lock actually holds
+Worth saying plainly, because a lock screen invites more trust than it deserves.
 
-Four layers, because any single one has a gap:
+Rimlock is a **deterrent against casual snooping** — a family member, a flatmate, a colleague
+picking up an unlocked laptop. It is not a security product, and no browser extension can be
+one. An extension cannot:
 
-0. **The lock screen gets its own window, of type `popup`.** This is the layer that matters
-   most and it is not obvious. Chromium renders popup windows with a read-only URL display and
-   no omnibox. A normal window keeps its address bar live even when every tab shows the lock
-   page — and typing in that address bar pops the autocomplete dropdown, which lists history,
-   bookmarks and open tabs straight from your profile. No extension API can disable the omnibox
-   or filter its suggestions. So the lock opens a fullscreen popup and every other window is
-   minimised out of the way; if one is ever surfaced from the taskbar it is put straight back
-   down and focus returns to the lock screen.
+- **Protect itself.** Anyone who reaches `chrome://extensions` can switch it off. Rimlock
+  redirects that page away, but it cannot defend against the browser's own extension manager.
+  [`hardening/`](hardening/) has policy files that close this properly.
+- **Cover incognito by default.** Extensions are disabled there, so `Ctrl+Shift+N` opens an
+  unguarded window with an address bar that still autocompletes your history. Switch on
+  *Allow in Incognito* — the settings page prompts you.
+- **Cover other profiles, Guest mode, or a different browser** on the same machine.
 
-   **Windows are hidden, never closed.** This is deliberate and was learned the hard way. An
-   earlier version closed them and rebuilt the session from a snapshot on unlock — but a rebuild
-   can never be faithful. `chrome.windows.create()` cannot reproduce tab history (the back
-   button), scroll position, form state or a tab's unloaded status, and any tab whose URL was
-   not recoverable simply vanished. Minimising costs nothing and loses nothing: Brave's own
-   session is left completely untouched, so the browser comes back exactly as it was.
+If you want actual protection rather than a deterrent, use a separate operating-system user
+account. It costs nothing and closes all of the above at once.
 
+## How it works, briefly
 
-1. **A declarativeNetRequest redirect rule.** Every top-level `http`/`https` navigation is
-   redirected to the lock page at the network layer, before a request goes out. The block rule
-   is a *dynamic* rule, so it survives a browser restart and is already in force before the
-   first tab loads. The pass-through that cancels it is a *session* rule, which Chrome discards
-   on restart. That asymmetry is the whole trick — the browser reopens blocked by default, with
-   no window where the startup handler hasn't run yet.
-   The redirect carries the address it replaced (`lock.html?from=<original>`), which is how a
-   tab finds its way back on unlock.
+Four layers, because each one alone has a gap:
 
-   Dynamic rules survive an extension reload, so the rule is versioned (`RULE_VERSION`). Without
-   that check, `armBlocking()` sees *a* rule with the right id, assumes it is current and returns
-   — leaving an old version's rule in force with no visible sign. Bump `RULE_VERSION` whenever the
-   rule definition changes.
+0. **The lock screen gets its own `popup`-type window.** Chromium renders those with no
+   omnibox. A normal window keeps its address bar live even when every tab shows the lock
+   page — and typing there reveals your history through autocomplete. No API can disable that
+   dropdown, so the answer is to leave no address bar on screen.
+1. **A declarativeNetRequest redirect rule** blocks navigation at the network layer. The block
+   rule is *dynamic* (survives a restart); the pass-through that cancels it is a *session* rule
+   (cleared on restart). That asymmetry is why the browser always reopens locked.
+2. **Tab listeners** catch what the network layer can't — `file://` and `chrome://` pages.
+3. **A one-minute alarm sweep** re-asserts everything if the service worker was evicted.
 
-2. **Tab listeners.** `tabs.onCreated` and `tabs.onUpdated` redirect anything the network rule
-   can't touch — `file://` pages, `chrome://` pages.
-
-   **Unloaded tabs are left alone.** Brave restores a session with only the active tab loaded;
-   the rest sit in the tab strip with nothing in memory until clicked. Redirecting one would
-   force it to load, which is why an earlier version made all 20 tabs reload on every unlock.
-   An unloaded tab renders nothing, so there is nothing to hide — and the moment anyone opens
-   it, the network rule redirects it like any other navigation. Only genuinely loaded tabs get
-   swapped for the lock page.
-3. **A one-minute alarm sweep** that re-asserts both of the above, in case the service worker
-   was evicted and something slipped through.
-
-The PIN is never stored. What's stored is a PBKDF2-SHA256 digest (600,000 iterations) over a
-random 16-byte per-install salt, in `chrome.storage.local`. Verification happens in the service
-worker, never in the page. Wrong guesses escalate: attempts 1–2 are free, then a delay that
-doubles from 30 seconds up to 15 minutes. The failure counter lives in `local` storage, so
-restarting the browser does not reset it.
-
-The recovery code is 16 characters from a no-look-alikes alphabet (no `0`/`O`, no `1`/`I`/`L`),
-hashed the same way. Using it unlocks the browser and immediately forces a PIN reset.
-
-### Why the PIN minimum is 6
-
-The stored digest is a file on disk. Someone who copies it can guess offline, with no
-lockout to slow them down — so PIN length is the only thing standing between them and your
-hash. A 4-digit PIN is 10,000 guesses, minutes of work. Each extra digit multiplies that by
-ten, which is why setup nudges toward 8. `lib/pin.js` holds the rules (shared by the worker
-and every page so they cannot drift) and also rejects runs like `123456` and repeats like
-`121212`, which any attacker tries first.
-
-The *entry* minimum stays at 4 (`MIN_PIN_ENTRY`) on purpose: raising it would lock out
-anyone still holding a PIN created under the old rules. Only PIN **creation** requires 6.
-
-Each vault records the iteration count it was built with, so raising `ITERATIONS` never
-breaks an existing PIN — old ones keep verifying with their own value.
-
-## What this does not stop
-
-Worth being straight with you, because the gap matters for the threat you described:
-
-- **Anyone who can reach `chrome://extensions` can disable or remove the extension.** The tab
-  listeners redirect that page away, but there is a brief moment as it loads where a fast,
-  determined person could click Remove. An extension cannot protect itself from the browser's
-  own extension manager. See hardening below.
-- **Incognito windows — turn this on.** Extensions are disabled in incognito by default, so
-  `Ctrl+Shift+N` opens a window this extension never sees: a live omnibox whose autocomplete
-  still suggests your normal-profile history. Switch on *Allow in Incognito* on the extension's
-  details page and incognito windows get handled like any other window while locked. Better
-  still, disable incognito outright (hardening below).
-- **Other Chrome profiles and Guest mode.** The extension is installed per profile. A new
-  profile or a Guest window is not covered.
-- **A different browser.** If Firefox is also installed, this does nothing about it.
-- **Someone who already has your Windows account open.** This is a browser lock, not a computer
-  lock.
-
-If the goal is genuinely "nobody else sees my activity," the strongest version of this is a
-separate Windows user account — that is what Windows user accounts are for, and it covers all
-five gaps above at once. This extension is the right tool for a casual barrier: a family member
-or colleague who sits down at an already-logged-in machine.
-
-## Hardening it (optional)
-
-Ready-to-run policy files live in [`hardening/`](hardening/) — `brave-harden.reg` to apply,
-`brave-unharden.reg` to reverse, and a README explaining each setting and what it costs you.
-They block the extensions page, incognito, guest mode and DevTools.
-
-Two things worth knowing before you run them: they block **your** access to those pages too
-(so reload the extension before applying), and `ExtensionInstallForcelist` is deliberately not
-used — it cannot pin an unpacked local extension, so blocking the extensions page is the
-workable substitute.
-
-### Two Chromium quirks worth knowing
-
-Both cost real debugging time, and both fail *silently* — the API call succeeds and simply
-doesn't do what it says:
-
-- **`chrome.windows.remove()` does not reliably close a multi-tab window.** With "warn me before
-  closing multiple tabs" enabled (Brave's default), it raises a *Close all tabs?* confirmation
-  and waits for a human to click it. The promise resolves, no error is thrown, and the window
-  stays open. Closing the tabs instead (`chrome.tabs.remove(ids)`) closes the window without
-  asking, so every close in this extension goes through `closeWindow()`.
-- **`state` passed to `chrome.windows.create()` is advisory.** Brave accepts
-  `{ type: 'popup', state: 'fullscreen' }` without complaint and hands back a small popup, so a
-  try/catch fallback never fires. Setting the state afterwards with `chrome.windows.update()`
-  works, and its return value reports the state actually applied — that is what `fillScreen()`
-  checks before falling back to `maximized`.
-
-## Unlock, step by step
-
-1. **Revive in place.** Every lock page is navigated back to the address it carries (`?from=`).
-   The tabs are the same tab objects throughout, so their history and state survive.
-2. **Un-minimise** each window to the state it had before the lock.
-3. **Rebuild from the snapshot only if nothing is left** — a genuine last resort, since a rebuild
-   loses tab history and scroll position. In normal operation this never runs.
-4. **Close the lock popup** last, once something else is on screen. Never the final window, which
-   would quit the browser.
-
-## If you lock yourself out
-
-The extension cannot be unlocked without the PIN or the recovery code — that is the point. If
-both are gone, the escape hatch is to remove the extension:
-
-- Start the browser with extensions off: `chrome.exe --disable-extensions`, then open
-  `chrome://extensions` and remove it.
-- Or delete the profile's extension data directly.
-
-If you applied the force-install policy above, delete that registry value first.
+**[→ Full walkthrough in `docs/how-it-works.md`](docs/how-it-works.md)**, including why windows
+are hidden rather than closed, and the two Chromium quirks that fail silently and cost the most
+debugging time.
 
 ## Layout
 
 ```
-manifest.json         MV3 manifest: permissions, background worker, commands
-background.js         The lock engine — state, DNR rules, tab guarding, PIN verification
-lib/crypto.js         PBKDF2 hashing, constant-time compare, recovery codes
-pages/lock.html|css|js  The lock screen: keypad, PIN dots, lockout countdown, recovery
-pages/setup.html|js   First-run: choose PIN, save recovery code
-pages/options.html|js Settings, change PIN, regenerate code, remove protection
-pages/popup.html|js   Toolbar popup: status + Lock now
-icons/                Generated padlock icons (16/32/48/128)
+manifest.json     MV3 manifest
+background.js     The lock engine — state, rules, window handling, PIN verification
+lib/crypto.js     PBKDF2 hashing, constant-time compare, recovery codes
+lib/pin.js        PIN rules, shared by the worker and every page so they cannot drift
+pages/lock.*      Lock screen: keypad, lockout countdown, recovery code
+pages/setup.*     First run: choose a PIN, save the recovery code
+pages/options.*   Settings, change PIN, remove protection
+pages/popup.*     Toolbar popup
+hardening/        Windows policy files to stop the extension being switched off
+store/            Privacy policy and Chrome Web Store listing copy
 ```
 
-State lives in two places, deliberately:
+## Status
 
-- `chrome.storage.local` — PIN digest, settings, failure counter, and the saved session
-  (`restore`). All of these must survive a restart. The session snapshot is here rather than in
-  session storage precisely because windows get closed: if the browser crashed while locked and
-  the snapshot lived in session storage, those tabs would be gone. It is written only when
-  nothing is already waiting to be restored, so locking twice can't overwrite the real session.
-- `chrome.storage.session` — the `unlocked` flag and the lock window's id. These must *not*
-  survive a restart; that is what makes the browser come back locked.
+Built and used daily on **Brave / Windows 11**. Not yet tested on Chrome, Edge, macOS or
+Linux — window handling is the part most likely to differ, especially fullscreen on macOS.
+Reports from other platforms are very welcome.
+
+## Contributing
+
+Issues and pull requests welcome. If you're reporting a bug in the lock itself, **a screenshot
+of the locked state is worth more than a description** — nearly every bug found so far was
+diagnosed from one.
+
+## License
+
+[MIT](LICENSE)
