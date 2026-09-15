@@ -1,0 +1,17 @@
+Windows Registry Editor Version 5.00
+
+; Rimlock - reverses brave-harden.reg
+;
+; Right-click -> Merge, approve UAC, then fully restart Brave.
+;
+; The minus sign before a value name deletes that value. The minus before the
+; URLBlocklist key path deletes that whole key. Only the settings the hardening
+; file added are touched; nothing else under the Brave policy key is removed.
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\BraveSoftware\Brave]
+"IncognitoModeAvailability"=-
+"BrowserGuestModeEnabled"=-
+"BrowserAddPersonEnabled"=-
+"DeveloperToolsAvailability"=-
+
+[-HKEY_LOCAL_MACHINE\SOFTWARE\Policies\BraveSoftware\Brave\URLBlocklist]

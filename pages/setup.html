@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Set up Rimlock</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body { display: grid; place-items: center; min-height: 100vh; padding: 32px 20px; }
+    .wrap { width: 100%; max-width: 440px; }
+    .steps { display: flex; gap: 6px; margin-bottom: 20px; }
+    .steps i { flex: 1; height: 3px; border-radius: 2px; background: var(--line); }
+    .steps i.on { background: var(--accent); }
+    .warn { border-left: 3px solid #d8a13a; padding-left: 12px; font-size: 13.5px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="steps">
+      <i id="step1" class="on"></i><i id="step2"></i>
+    </div>
+
+    <section id="pane-pin" class="card stack">
+      <div>
+        <h1>Choose a PIN</h1>
+        <p>This PIN unlocks your browser every time it starts. 6 to 12 digits &mdash;
+           8 is meaningfully safer than 6.</p>
+      </div>
+      <div>
+        <label for="pin">PIN</label>
+        <input id="pin" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12">
+        <p id="pin-hint" class="msg"></p>
+      </div>
+      <div>
+        <label for="pin2">Confirm PIN</label>
+        <input id="pin2" type="password" inputmode="numeric" autocomplete="new-password" maxlength="12">
+      </div>
+      <p id="pin-msg" class="msg"></p>
+      <div class="row">
+        <button id="create" class="primary">Create PIN</button>
+      </div>
+    </section>
+
+    <section id="pane-code" class="card stack" hidden>
+      <div>
+        <h1>Save your recovery code</h1>
+        <p>If you ever forget the PIN, this code is the only way back in. Write it down
+           somewhere outside this browser.</p>
+      </div>
+      <div id="code" class="code"></div>
+      <div class="row">
+        <button id="copy">Copy</button>
+        <button id="download">Save as file</button>
+      </div>
+      <p class="warn">This code is shown once. It is stored only as a hash, so it cannot be
+         recovered later.</p>
+      <label class="switch">
+        <input id="saved" type="checkbox">
+        <span>I have saved this code somewhere safe.</span>
+      </label>
+      <div class="row">
+        <button id="finish" class="primary" disabled>Finish setup</button>
+      </div>
+    </section>
+
+    <section id="pane-done" class="card stack" hidden>
+      <div>
+        <h1>You are protected</h1>
+        <p>Your browser will ask for this PIN the next time it starts. You can lock it right
+           now from the toolbar icon, or with Ctrl+Shift+L.</p>
+      </div>
+      <div class="row">
+        <button id="lock-now" class="primary">Lock now and test it</button>
+        <button id="open-options">Settings</button>
+      </div>
+    </section>
+  </div>
+
+  <script src="setup.js" type="module"></script>
+</body>
+</html>

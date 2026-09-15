@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rimlock</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body { width: 260px; padding: 16px; }
+    .state { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+    .pip { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); flex: none; }
+    .pip.locked { background: var(--danger); }
+    .state strong { font-size: 14.5px; font-weight: 600; }
+    .state small { display: block; color: var(--muted); font-size: 12px; }
+    button { width: 100%; }
+    button + button { margin-top: 8px; }
+  </style>
+</head>
+<body>
+  <div class="state">
+    <span id="pip" class="pip"></span>
+    <div>
+      <strong id="label">Checking...</strong>
+      <small id="detail"></small>
+    </div>
+  </div>
+  <button id="lock" class="primary">Lock now</button>
+  <button id="options">Settings</button>
+  <script src="popup.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+Windows Registry Editor Version 5.00
+
+; Rimlock - hardening policies for Brave on Windows
+;
+; Run brave-unharden.reg to reverse everything here.
+; Right-click this file -> Merge, approve the UAC prompt, then fully restart Brave.
+; Check it applied at  brave://policy
+;
+; Brave reads Chromium policies from its OWN key, not Google Chrome's. Putting these
+; under ...\Policies\Google\Chrome would silently do nothing.
+
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\BraveSoftware\Brave]
+
+; Incognito off. Without this, Ctrl+Shift+N opens a window the extension cannot
+; see, with a working address bar that still autocompletes your normal history.
+; 0 = available, 1 = disabled, 2 = forced
+"IncognitoModeAvailability"=dword:00000001
+
+; Guest windows off. A guest profile has no extensions at all, so the lock does
+; not apply there either.
+"BrowserGuestModeEnabled"=dword:00000000
+
+; Stop new profiles being added as a way around the lock.
+"BrowserAddPersonEnabled"=dword:00000000
+
+; DevTools off. Otherwise the extension's own pages and storage can be inspected
+; and edited.  0 = allowed, 1 = allowed except force-installed, 2 = disallowed
+; NOTE: this also blocks F12 for your own development work. Delete this line while
+; you are still changing the code.
+"DeveloperToolsAvailability"=dword:00000002
+
+; Block the pages that could switch the extension off. This is the one that
+; actually protects the lock, because an extension cannot defend itself.
+[HKEY_LOCAL_MACHINE\SOFTWARE\Policies\BraveSoftware\Brave\URLBlocklist]
+"1"="chrome://extensions"
+"2"="brave://extensions"
+"3"="chrome://extensions-internals"
+"4"="brave://extensions-internals"
+"5"="chrome://settings/extensions"
+"6"="brave://settings/extensions"
+"7"="chrome://flags"
+"8"="brave://flags"

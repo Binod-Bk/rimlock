@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Locked</title>
+  <link rel="stylesheet" href="ui.css">
+  <link rel="stylesheet" href="lock.css">
+</head>
+<body>
+  <main class="screen">
+    <div class="vault">
+      <svg class="shackle" viewBox="0 0 64 40" aria-hidden="true">
+        <path d="M14 38 V20 a18 18 0 0 1 36 0 V38" fill="none" stroke="currentColor" stroke-width="7" stroke-linecap="round"/>
+      </svg>
+      <div class="body">
+        <div class="keyhole"></div>
+      </div>
+    </div>
+
+    <h1 id="title">Browser locked</h1>
+    <p id="subtitle">Enter your PIN to continue.</p>
+
+    <div id="dots" class="dots" aria-live="polite"></div>
+    <p id="message" class="msg" role="status"></p>
+
+    <div id="keypad" class="keypad">
+      <button type="button" data-key="1">1</button>
+      <button type="button" data-key="2">2</button>
+      <button type="button" data-key="3">3</button>
+      <button type="button" data-key="4">4</button>
+      <button type="button" data-key="5">5</button>
+      <button type="button" data-key="6">6</button>
+      <button type="button" data-key="7">7</button>
+      <button type="button" data-key="8">8</button>
+      <button type="button" data-key="9">9</button>
+      <button type="button" data-key="back" class="aux">&#9003;</button>
+      <button type="button" data-key="0">0</button>
+      <button type="button" data-key="enter" class="aux go">&#8594;</button>
+    </div>
+
+    <form id="recovery" class="recovery" hidden>
+      <label for="recovery-input">Recovery code</label>
+      <input id="recovery-input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="XXXX-XXXX-XXXX-XXXX">
+      <div class="row">
+        <button type="submit" class="primary">Unlock</button>
+        <button type="button" id="recovery-cancel">Back to PIN</button>
+      </div>
+    </form>
+
+    <button type="button" id="recovery-toggle" class="linkish">Forgot your PIN?</button>
+  </main>
+
+  <script src="lock.js" type="module"></script>
+</body>
+</html>

@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Rimlock settings</title>
+  <link rel="stylesheet" href="ui.css">
+  <style>
+    body { padding: 36px 20px 60px; }
+    .wrap { max-width: 560px; margin: 0 auto; }
+    header { margin-bottom: 24px; }
+    header h1 { font-size: 22px; }
+    section + section { margin-top: 18px; }
+    section h2 { font-size: 15px; }
+    .sub { font-size: 13px; color: var(--muted); margin: -4px 0 16px; }
+    .inline { display: flex; gap: 10px; align-items: flex-end; }
+    .inline > div { flex: 1; }
+    .narrow { max-width: 110px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Rimlock</h1>
+      <p class="sub" id="status">Loading...</p>
+    </header>
+
+    <section id="setup-card" class="card stack" hidden>
+      <div>
+        <h2>Protection is off</h2>
+        <p class="sub">There is no PIN set, so your browser is not locked at startup.</p>
+      </div>
+      <div class="row"><button id="go-setup" class="primary">Set a PIN</button></div>
+    </section>
+
+    <section id="reset-card" class="card stack" hidden>
+      <div>
+        <h2>Set a new PIN</h2>
+        <p class="sub">You unlocked with a recovery code. Choose a new PIN now.</p>
+      </div>
+      <div>
+        <label for="reset-pin">New PIN</label>
+        <input id="reset-pin" type="password" inputmode="numeric" maxlength="12">
+      </div>
+      <div>
+        <label for="reset-pin2">Confirm new PIN</label>
+        <input id="reset-pin2" type="password" inputmode="numeric" maxlength="12">
+      </div>
+      <p id="reset-msg" class="msg"></p>
+      <div class="row"><button id="reset-save" class="primary">Save new PIN</button></div>
+    </section>
+
+    <section id="incognito-card" class="card stack" data-needs-pin hidden>
+      <div>
+        <h2>Incognito is not covered</h2>
+        <p class="sub">Extensions are switched off in incognito by default, so
+           Ctrl+Shift+N opens a window this lock never sees &mdash; with a working
+           address bar that still suggests your normal history. Switch on
+           <strong>Allow in Incognito</strong> to close it.</p>
+      </div>
+      <div class="row"><button id="open-details" class="primary">Open extension details</button></div>
+    </section>
+
+    <section class="card stack" data-needs-pin>
+      <div>
+        <h2>When to lock</h2>
+      </div>
+      <label class="switch">
+        <input id="opt-startup" type="checkbox">
+        <span>Lock every time the browser starts
+          <small>Recommended. This is what stops someone opening your browser cold.</small>
+        </span>
+      </label>
+      <label class="switch">
+        <input id="opt-idle" type="checkbox">
+        <span>Lock after a period of inactivity
+          <small>Uses the system idle signal, so it also fires when the screen locks.</small>
+        </span>
+      </label>
+      <div class="narrow">
+        <label for="opt-minutes">Idle minutes</label>
+        <input id="opt-minutes" type="number" min="1" max="240" step="1">
+      </div>
+      <p id="settings-msg" class="msg"></p>
+      <div class="row">
+        <button id="save-settings" class="primary">Save settings</button>
+        <button id="lock-now">Lock now</button>
+      </div>
+    </section>
+
+    <section class="card stack" data-needs-pin>
+      <div>
+        <h2>Change PIN</h2>
+      </div>
+      <div>
+        <label for="cur-pin">Current PIN</label>
+        <input id="cur-pin" type="password" inputmode="numeric" maxlength="12">
+      </div>
+      <div class="inline">
+        <div>
+          <label for="new-pin">New PIN</label>
+          <input id="new-pin" type="password" inputmode="numeric" maxlength="12">
+        </div>
+        <div>
+          <label for="new-pin2">Confirm</label>
+          <input id="new-pin2" type="password" inputmode="numeric" maxlength="12">
+        </div>
+      </div>
+      <p id="pin-msg" class="msg"></p>
+      <div class="row"><button id="change-pin" class="primary">Change PIN</button></div>
+    </section>
+
+    <section class="card stack" data-needs-pin>
+      <div>
+        <h2>Recovery code</h2>
+        <p class="sub">Generating a new code immediately invalidates the old one.</p>
+      </div>
+      <div>
+        <label for="code-pin">Current PIN</label>
+        <input id="code-pin" type="password" inputmode="numeric" maxlength="12">
+      </div>
+      <div id="code-out" class="code" hidden></div>
+      <p id="code-msg" class="msg"></p>
+      <div class="row"><button id="new-code">Generate new code</button></div>
+    </section>
+
+    <section class="card stack" data-needs-pin>
+      <div>
+        <h2>Remove protection</h2>
+        <p class="sub">Deletes the stored PIN and stops locking. This cannot be undone.</p>
+      </div>
+      <div>
+        <label for="remove-pin">Current PIN</label>
+        <input id="remove-pin" type="password" inputmode="numeric" maxlength="12">
+      </div>
+      <p id="remove-msg" class="msg"></p>
+      <div class="row"><button id="remove" class="danger">Remove protection</button></div>
+    </section>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
